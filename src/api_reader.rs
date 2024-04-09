@@ -3,7 +3,6 @@ use std::fs;
 use std::fs::File;
 use std::io::{self, Read, Write, Error};
 use flate2::read::GzDecoder;
-use std::path::Path;
 
 pub async fn read_api() -> Result<(), Error> {
     // Define base URL
@@ -16,7 +15,6 @@ pub async fn read_api() -> Result<(), Error> {
     for i in 0..num_files {
         let num = format!("{:06}", start_num + i * increment);
         let url = format!("{}{}Z.json.gz", base_url, num);
-        let filename = format!("{}Z.json.gz", num);
 
         let response = match get(&url).await {
             Ok(res) => res,
