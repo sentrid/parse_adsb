@@ -1,6 +1,7 @@
 use crate::adsb_data::Root;
 use async_std::task;
 use sqlx::{Error, MySql, MySqlPool, Pool, Row};
+use sqlx::mysql::MySqlQueryResult;
 
 pub async fn insert_adsb(adsb: &Root) {
     let result = task::block_on(connect());
@@ -64,12 +65,25 @@ pub async fn insert_adsb(adsb: &Root) {
                     .bind(&aircraft.messages)
                     .bind(&aircraft.seen)
                     .bind(&aircraft.rssi)
-                    .execute(&pool).await;
+                    .fetch_one(&pool)
+                    .await
+                    .unwrap();
 
-                match aircraft_result {
-                    Ok(_) => {}
-                    Err(err_info) => {
-                        println!("{:?}", err_info);
+                let mut aircraft_id: u64 = aircraft_result.get(0);
+
+                let nav_modes = &aircraft.nav_modes;
+                for nav_mode in nav_modes {
+                    let result = sqlx::query("CALL insert_aircraft_nav_modes(?, ?);")
+                        .bind(aircraft_id)
+                        .bind(&nav_mode)
+                        .execute(&pool)
+                        .await;
+
+                    match result  {
+                        Ok(_) => {}
+                        Err(err_info) => {
+                            println!("{:?}", err_info);
+                        }
                     }
                 }
             }
